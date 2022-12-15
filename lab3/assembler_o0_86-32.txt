@@ -1,0 +1,86 @@
+exponential_function(double):
+        pushl   %ebp		//сохраняем адрес вызвавышей функции
+        movl    %esp, %ebp	//Сохраняем вершину стека в ebp
+        subl    $40, %esp	//выделяем 40 байт (свдиг вниз) 
+        movl    8(%ebp), %eax	//	--//--v
+        movl    %eax, -40(%ebp)	//	--//--v
+        movl    12(%ebp), %eax	//	--//--v
+        movl    %eax, -36(%ebp)	//вытаскиваем наш float порциями из 4 байт
+        fld1			//забрасываем в регистр для fp чисел ( в ST(0) ) и равняет её 1 ( sum = 1)
+        fstpl   -8(%ebp)	//Выталкивание значения из st(0) в память (в s)  
+        fld1			//забрасываем в регистр для fp чисел ( в ST(0) ) и равняет её 1 (behind = 1)
+        fstpl   -16(%ebp)	//Выталкивание значения из st(0) в память (в s)  
+        fld1			// --//--
+        fstpl   -24(%ebp)	//i = 1
+        jmp     .L2		//jump
+.L3:
+        fldl    -16(%ebp)	//Загружаем в st(0) behind
+        fmull   -40(%ebp)	//умножаем с power_num
+        fdivl   -24(%ebp)	// делим на i
+        fstpl   -16(%ebp)	//выбрасываем на стек behind
+        fldl    -8(%ebp)	//загружаем sum в st(0)
+        faddl   -16(%ebp)	//добавляем к sum behind
+        fstpl   -8(%ebp)	//выгружаем на стек sum
+        fldl    -24(%ebp)	//загружаем i в st(0)
+        fld1			//загружаем 1 в st(1)
+        faddp   %st, %st(1)	//i++ с выталкиванием st(1)
+        fstpl   -24(%ebp)	//на стек кладём i и освобождаем этим st(0)
+.L2:
+        fldl    -24(%ebp)	//забрасываем в регистр для fp чисел ( в ST(0) ) и равняет её значению из адреса -24(%ebp)
+        fldl    .LC1		// 500000000 на st(1)
+        fcomip  %st(1), %st	//Сравнение чисел вещ.  с выталкиванием st(1)
+        fstp    %st(0)		//st(0) на стек
+        ja      .L3		//прыг если меньше 
+        fldl    -8(%ebp)	//загружаем в регистр sum
+        leave
+        ret
+.LC3:
+        .string "Enter the number"
+.LC4:
+        .string "%.10f\n"
+main:
+        leal    4(%esp), %ecx	//поместить в %ecx адрес предыдущего элемента в стеке; фактически, %ecx = %esp + 4 *(argc) 
+        andl    $-16, %esp	//Выравнивает стек (последние 4 бита зануляются) 
+        pushl   -4(%ecx)	//на стек кладём адрес **argv
+        pushl   %ebp		//Сохраняем на стеке адрес ссылки на вызвавшую функцию 
+        movl    %esp, %ebp	//Сохраняем вершину стека в ebp
+        pushl   %ecx		//кладём *argc на стек 
+        subl    $20, %esp	//Сдвигаем esp на 20 вниз
+        movl    %ecx, %eax	//кладём 
+        cmpl    $1, (%eax)	//сравнение argc == 1
+        jne     .L6		//если нет, то прыгаем на l6
+        subl    $12, %esp	//Сдвигаем esp на 12 вниз (для puts)
+        pushl   $.LC3		//на стек константу и в puts её использвует
+        call    puts
+        addl    $16, %esp	// обратно + 16(12 из puts + 4 за *argc) по стеку после puts
+        movl    $1, %eax	//return = 1
+        jmp     .L7		//прыжок на L7	
+.L6:
+        movl    4(%eax), %eax	//*argv в eax
+        addl    $4, %eax	//argv[1] в eax
+        movl    (%eax), %eax	//адрес argv[1] в eax
+        subl    $12, %esp	// выделение 12 байт
+        pushl   %eax		// argv[1] для  atof (+4 байта на стеке)
+        call    atof		//
+        addl    $16, %esp	//возврат стека на 12 + 4 из-за atof`а
+        fstpl   -16(%ebp)	//сохранить это значение 
+        subl    $8, %esp	//выделяем 8 байт на стеке
+        pushl   -12(%ebp)	//кладёт на стек float	1/2
+        pushl   -16(%ebp)	//кладёт на стек float	2/2
+        call    exponential_function(double)
+        addl    $16, %esp	//чистим 16 байт (esp+16)
+        subl    $4, %esp	//выделяем 4 байта
+        leal    -8(%esp), %esp	//премещаем стек на 8 ниже
+        fstpl   (%esp)		//кладёт на стек результат программы = sum
+        pushl   $.LC4		//
+        call    printf
+        addl    $16, %esp	//возвращаем вершину стека к началу
+        movl    $0, %eax	//return 0
+.L7:
+        movl    -4(%ebp), %ecx
+        leave
+        leal    -4(%ecx), %esp
+        ret
+.LC1:
+        .long   536870912
+        .long   1106419807

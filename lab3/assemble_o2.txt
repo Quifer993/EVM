@@ -1,0 +1,57 @@
+exponential_function(double): //внизу вставлен этот же код, так что здесь не описываю.
+        movsd   .LC0(%rip), %xmm3
+        movsd   .LC1(%rip), %xmm5
+        movapd  %xmm0, %xmm4
+        movapd  %xmm3, %xmm2
+        movapd  %xmm3, %xmm1
+        movapd  %xmm3, %xmm0
+.L2:
+        mulsd   %xmm4, %xmm1
+        divsd   %xmm2, %xmm1
+        addsd   %xmm3, %xmm2
+        comisd  %xmm2, %xmm5
+        addsd   %xmm1, %xmm0
+        ja      .L2
+        ret
+.LC2:
+        .string "Enter the number"
+.LC3:
+        .string "%.10f\n"
+main:
+        subq    $8, %rsp		//Выделение 8 байт памяти (под input?)
+        cmpl    $1, %edi		//сравнение 1 и argc
+        je      .L11			//прыг если да
+        movq    8(%rsi), %rdi		//присвоение rdi argv[1]
+        xorl    %esi, %esi		//esi = 0
+        call    strtod			//аналог atof`a - запись в %xmm0
+        movsd   .LC0(%rip), %xmm3	// const 1
+        movsd   .LC1(%rip), %xmm5	//5000000000
+        movapd  %xmm0, %xmm4		//power_num
+        movapd  %xmm3, %xmm2		//i
+        movapd  %xmm3, %xmm0		//sum = 1
+        movapd  %xmm3, %xmm1		//behind
+.L8:
+        mulsd   %xmm4, %xmm1		//behind = behind * power_num
+        divsd   %xmm2, %xmm1		// behind/ i
+        addsd   %xmm3, %xmm2		// i++
+        comisd  %xmm2, %xmm5		//i < 5000000000 ?
+        addsd   %xmm1, %xmm0		// sum += behind
+        ja      .L8			//прыг
+        movl    $.LC3, %edi		//
+        movl    $1, %eax		//
+        call    printf			//
+        xorl    %eax, %eax		//eax = 0
+.L5:
+        addq    $8, %rsp		//производят выравнивание стека; кладём на стек обратный адрес, размер которого на архитектуре x86-64 равен 8 байтам
+        ret				//передача управления предыдущей функции 
+.L11:
+        movl    $.LC2, %edi		//присвоение константы string ->  edi
+        call    puts			//puts with %edi
+        movl    $1, %eax		//значение return = 1;
+        jmp     .L5			//прыг
+.LC0:
+        .long   0
+        .long   1072693248
+.LC1:
+        .long   536870912
+        .long   1106419807

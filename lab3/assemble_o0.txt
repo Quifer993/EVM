@@ -1,0 +1,74 @@
+exponential_function(double):
+        pushq   %rbp 			//Сохраняем указатель кадра вызвавшей программы
+        movq    %rsp, %rbp		//Копируем указатель нашего кадра
+        movsd   %xmm0, -40(%rbp)	//Результат из atof копируем
+        movsd   .LC0(%rip), %xmm0	//
+        movsd   %xmm0, -8(%rbp)		//Присвоить 1 в sum
+        movsd   .LC0(%rip), %xmm0	//
+        movsd   %xmm0, -16(%rbp)	//Присвоить 1 в behind
+        movsd   .LC0(%rip), %xmm0	//
+        movsd   %xmm0, -24(%rbp)	//Присвоить 1 в i
+        jmp     .L2			//прыг
+.L3:
+        movsd   -16(%rbp), %xmm0	//Берём behind
+        mulsd   -40(%rbp), %xmm0	//Умножаем на вводное число(atof)
+        divsd   -24(%rbp), %xmm0	//делим на i
+        movsd   %xmm0, -16(%rbp)	//Записываем в behind
+        movsd   -8(%rbp), %xmm0		//Берём sum
+        addsd   -16(%rbp), %xmm0	//sum_ранее += behind
+        movsd   %xmm0, -8(%rbp)		//sum = sum_ранее
+        movsd   -24(%rbp), %xmm1	
+        movsd   .LC0(%rip), %xmm0
+        addsd   %xmm1, %xmm0		//i_ранее ++
+        movsd   %xmm0, -24(%rbp)	//i = i_ранее
+.L2:
+        movsd   .LC1(%rip), %xmm0	//5000000000
+        comisd  -24(%rbp), %xmm0	// 
+        ja      .L3			//прыг на L3
+        movsd   -8(%rbp), %xmm0		//sum гуляет
+        movq    %xmm0, %rax		//
+        movq    %rax, %xmm0		// return sum
+        popq    %rbp			//восстановление указателя базы предыдущего фрейма
+        ret				//передача управления предыдущей функции 
+.LC2:
+        .string "Enter the number"
+.LC3:
+        .string "%.10f\n"
+main:
+        pushq   %rbp		//Сохраняем указатель кадра вызвавшей функции
+        movq    %rsp, %rbp	//копируем указатель нашего кадра
+        subq    $32, %rsp	//выдать 32 байта памяти rsp
+        movl    %edi, -20(%rbp) //argv
+        movq    %rsi, -32(%rbp)	//argc**(8 байт) и выравнивание до кратности 8
+        cmpl    $1, -20(%rbp)	//сравниваем argc == 1
+        jne     .L6		//если нет -> перепрыгиваем на .L6
+        movl    $.LC2, %edi	//заносим строку в переменную
+        call    puts		//после чего выводим её
+        movl    $1, %eax	//присвоение в eax константы
+        jmp     .L7		// переход в L7
+.L6:
+        movq    -32(%rbp), %rax	//записывается указатель на argv
+        addq    $8, %rax	//сдвигается на 8 байт <=> argv[1] == argv + 8
+        movq    (%rax), %rax	//записываем в регистр значение по указателю в этом месте (2ую сроку из ввода)
+        movq    %rax, %rdi	//копируем
+        call    atof		//use atof
+        movq    %xmm0, %rax	//Результат atof в rax
+        movq    %rax, -8(%rbp)	}
+        movq    -8(%rbp), %rax	}
+        movq    %rax, %xmm0	}
+        call    exponential_function(double)
+        movq    %xmm0, %rax	//ответ exp_fun
+        movq    %rax, %xmm0
+        movl    $.LC3, %edi
+        movl    $1, %eax
+        call    printf
+        movl    $0, %eax	//0 в return
+.L7:
+        leave	//выход из текущей функции (копирует содержимое )
+        ret	//передача управления предыдущей функции 
+.LC0:
+        .long   0
+        .long   1072693248
+.LC1:
+        .long   536870912
+        .long   1106419807

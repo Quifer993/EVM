@@ -1,0 +1,61 @@
+exponential_function(double):
+        vmov.f64        d16, #1.0e+0
+        vldr.64 d21, .L5
+        vmov.f64        d17, d16
+        vmov.f64        d18, d16
+        vmov.f64        d20, d16
+.L2:
+        vmul.f64        d19, d0, d17
+        vdiv.f64        d17, d19, d16
+        vadd.f64        d16, d16, d20
+        vcmpe.f64       d16, d21
+        vmrs    APSR_nzcv, FPSCR
+        vadd.f64        d18, d18, d17
+        bmi     .L2
+        vmov.f64        d0, d18
+        bx      lr
+.L5:
+        .word   536870912
+        .word   1106419807
+.LC0:
+        .ascii  "Enter the number\000"
+.LC1:
+        .ascii  "%.10f\012\000"
+main:
+        cmp     r0, #1 			//сравнение argc и 1
+        push    {r4, lr}		//Помещаем на стек r4 и lr, чтобы затем вернуть их в исходное состояние
+        beq     .L13			//если ==, то прыг
+        ldr     r0, [r1, #4]		//загрузить в r0 значение из *r1+4 (argv[1])
+        movs    r1, #0			//r1 = 0
+        bl      strtod			//использовать функцию, запонмить lr тут, чтобы потом вернуться сюда
+        vmov.f64        d18, #1.0e+0	//d18 = 1 ()
+        vldr.64 d21, .L14		//d21 = 50000000
+        vmov.f64        d16, d18	//d16 = 1 (i)
+        vmov.f64        d17, d18	//d17 = 1 (behind)
+        vmov.f64        d20, d18	//d20 = 1 Просто 1 в fp
+.L10:
+        vmul.f64        d19, d0, d17	//d19 = d0 * d17 (power * behind)
+        vdiv.f64        d17, d19, d16	//d17 = d19* d16 (d19 / i)
+        vadd.f64        d16, d16, d20	//i = i + 1
+        vcmpe.f64       d16, d21	//сравнение i и 5000000000
+        vmrs    APSR_nzcv, FPSCR	//запись флага FP статусного регистра в APSR
+        vadd.f64        d18, d18, d17	//i = i + 1
+        bmi     .L10			//прыг L.10 если меньше
+        vmov    r2, r3, d18		//переприсваивание для вывода в fprint
+        movw    r0, #:lower16:.LC1	//
+        movt    r0, #:upper16:.LC1	//
+        bl      printf			//
+        movs    r0, #0			//
+        pop     {r4, pc}		//забираем значение со стека в r4 и pc == ProgramCounter(R15)
+// -------конец правильно сработавшей программы
+.L13:
+        mov     r4, r0			//
+        movw    r0, #:lower16:.LC0	//
+        movt    r0, #:upper16:.LC0	//
+        bl      puts			//
+        mov     r0, r4			//
+        pop     {r4, pc}		//забираем значение со стека в r4 и pc == ProgramCounter(R15)
+//--------конец программы с ошибкой ввода
+.L14:
+        .word   536870912
+        .word   1106419807
